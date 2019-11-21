@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cy.pj.sys.dao.SysLogDao">
+
+	<!-- 基于条件查询当前页记录 -->
+	<select id="findPageObjects"
+		resultType="com.cy.pj.sys.entity.SysLog">
+		select * from sys_logs
+		<include refid="queryWhereId" />
+		order by createdTime desc
+		limit #{startIndex},#{pageSize}
+	</select>
+	<!-- 基于条件统计记录总数 -->
+	<select id="getRowCount" resultType="int">
+		select count(*) from sys_logs
+		<include refid="queryWhereId" />
+	</select>
+	<!-- 借助此元素对共性数据进行提取 -->
+	<sql id="queryWhereId">
+		<where>
+			<if test="username!=null and username!='' ">
+				username like concat("%",#{username},"%")
+			</if>
+		</where>
+	</sql>
+
+	<!-- 执行删除操作(基本业务实现，但是ids长度为0时可能有SQL异常风险) -->
+	<delete id="deleteObjects">
+		delete from sys_logs
+		where id in <!-- (1,2,3,4,5) -->
+		<foreach collection="ids" open="(" close=")" separator=","
+			item="id">
+			#{id}
+		</foreach>
+	</delete>
+	<!-- 从可靠性的角度优化上面 -->
+	<!-- <delete id="deleteObjects"> delete from sys_logs <choose> <when test="ids.length>0"> 
+		where id in <foreach collection="ids" open="(" close=")" separator="," item="id"> 
+		#{id} </foreach> </when> <otherwise> where id=-1 </otherwise> </choose> </delete> -->
+
+	<!-- 从安全可靠角度上看，这个比较优势 ，不建议使用in 
+	<delete id="deleteObjects"> delete from sys_logs <choose> 
+		<when test="ids.length>0"> <where> <foreach collection="ids" item="id" separator=" 
+		or "> id=#{id} </foreach> </where> <otherwise> where id=-1 </otherwise> </when> 
+		</choose> </delete> -->
+
+	<insert id="insertObject">
+		insert into sys_logs
+		(username,operation,method,params,time,ip,createdTime)
+		values
+		(#{username},#{operation},#{method},#{params},#{time},#{ip},#{createdTime})
+	</insert>
+
+
+</mapper>

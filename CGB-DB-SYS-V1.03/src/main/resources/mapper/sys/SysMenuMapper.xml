@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cy.pj.sys.dao.SysMenuDao">
+	
+	<cache 
+	readOnly="true" 
+	flushInterval="60000" 
+	size="512"/><!-- 使用mybatis的二级缓存 -->
+	
+	<!-- 关联查询本菜单以及上一级菜单相关信息 map实现的是hashmap,Map是一个接口。 2.方案：嵌套查询 -->
+	<select id="findObjects" resultType="map">
+		select c.*,(
+		select p.name
+		from sys_menus p
+		where c.parentId=p.id
+		) parentName
+		from sys_menus c
+	</select>
+	<!-- 1.方案：多表关联查询(左外连接) -->
+	<!-- <select id="findObjects" resultType="map"> select c.*,p.name parentName 
+		from sys_menus c left outer join sys_menus p on c.parentId=p.id </select> -->
+ 
+    <!--统计子菜单元素定义  -->
+    <select id="getChildCount" 
+    parameterType="int" 
+    resultType="int">
+    select count(*) from sys_menus 
+    where parentId=#{id}
+    
+    </select>
+
+   
+   <!-- 根据id删除菜单的元素定义 -->
+    <delete id="deleteObject" 
+    parameterType="int" flushCache="true">
+    delete from sys_menus 
+    where id=#{id}
+    </delete>
+ 
+    <!-- 基于请求获取数据库对应的菜单表中的所有菜单信息 -->
+    <select id="findZtreeMenuNodes"
+            resultType="com.cy.pj.sys.common.vo.Node">      
+        select id,name,parentId
+        from sys_menus        
+    </select>
+   
+   <!--flushCache:刷新缓存，数据层的  -->
+    <insert id="insertObject" parameterType="com.cy.pj.sys.entity.SysMenu" flushCache="true">
+     insert into sys_menus
+          (name,url,type,sort,note,parentId,permission, 
+          createdTime,modifiedTime,createdUser,modifiedUser)
+          values
+          (#{name},#{url},#{type},#{sort},#{note},#{parentId},#{permission}, 
+          now(),now(),#{createdUser},#{modifiedUser})
+    </insert>
+    
+    <update id="updateObject" parameterType="com.cy.pj.sys.entity.SysMenu" flushCache="true">
+     update sys_menus 
+     set 
+     name=#{name},
+     type=#{type},
+     sort=#{sort},
+     url=#{url},
+     parentId=#{parentId},
+     permission=#{permission},
+     modifiedUser=#{modifiedUser},
+     modifiedTime=now() 
+     where id=#{id}
+    </update>
+
+ <select id="findPermissions"
+           resultType="string">
+   select permission 
+   from sys_menus 
+   where id in 
+   <foreach collection="menuIds" 
+   open="(" 
+   close=")" 
+   separator="," 
+   item="item">
+   #{item}
+   
+   
+   
+ </foreach>               
+</select>
+</mapper>
